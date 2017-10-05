@@ -497,11 +497,14 @@ function! s:RunGrepRecursive(cmd_name, grep_cmd, action, ...)
 
     let argcnt = 1
     while argcnt <= a:0
-        if a:{argcnt} =~ '^-'
+        if a:{argcnt} =~ '^--startdir'
+            let argcnt = argcnt + 1
+            let startdir = a:{argcnt}
+        elseif a:{argcnt} =~ '^-'
             let grep_opt = grep_opt . " " . a:{argcnt}
         elseif pattern == ""
             let pattern = g:Grep_Shell_Quote_Char . a:{argcnt} . 
-                            \ g:Grep_Shell_Quote_Char
+                        \ g:Grep_Shell_Quote_Char
         else
             if filepattern != ""
                 let filepattern = filepattern . " " . a:{argcnt}
@@ -544,7 +547,7 @@ function! s:RunGrepRecursive(cmd_name, grep_cmd, action, ...)
             return
         endif
         let pattern = g:Grep_Shell_Quote_Char . pattern . 
-                        \ g:Grep_Shell_Quote_Char
+                    \ g:Grep_Shell_Quote_Char
         echo "\r"
     endif
 
@@ -552,7 +555,9 @@ function! s:RunGrepRecursive(cmd_name, grep_cmd, action, ...)
     if g:Grep_Cygwin_Find == 1
         let cwd = substitute(cwd, "\\", "/", "g")
     endif
-    if v:version >= 700
+    if startdir != ""
+        let startdir = startdir
+    elseif v:version >= 700
         let startdir = input("Start searching from directory: ", cwd, "dir")
     else
         let startdir = input("Start searching from directory: ", cwd)
@@ -564,7 +569,7 @@ function! s:RunGrepRecursive(cmd_name, grep_cmd, action, ...)
 
     if filepattern == ""
         let filepattern = input("Search in files matching pattern: ", 
-                                          \ g:Grep_Default_Filelist)
+                    \ g:Grep_Default_Filelist)
         if filepattern == ""
             return
         endif
@@ -579,11 +584,11 @@ function! s:RunGrepRecursive(cmd_name, grep_cmd, action, ...)
             let find_file_pattern = find_file_pattern . ' -o'
         endif
         let find_file_pattern = find_file_pattern . ' -name ' .
-              \ g:Grep_Shell_Quote_Char . one_pattern . g:Grep_Shell_Quote_Char
+                    \ g:Grep_Shell_Quote_Char . one_pattern . g:Grep_Shell_Quote_Char
         let txt = strpart(txt, stridx(txt, ' ') + 1)
     endwhile
     let find_file_pattern = g:Grep_Shell_Escape_Char . '(' .
-                    \ find_file_pattern . ' ' . g:Grep_Shell_Escape_Char . ')'
+                \ find_file_pattern . ' ' . g:Grep_Shell_Escape_Char . ')'
 
     let txt = g:Grep_Skip_Dirs
     let find_prune = ''
@@ -598,7 +603,7 @@ function! s:RunGrepRecursive(cmd_name, grep_cmd, action, ...)
             let txt = strpart(txt, stridx(txt, ' ') + 1)
         endwhile
         let find_prune = '-type d ' . g:Grep_Shell_Escape_Char . '(' .
-                         \ find_prune
+                    \ find_prune
         let find_prune = find_prune . ' ' . g:Grep_Shell_Escape_Char . ')'
     endif
 
@@ -609,8 +614,8 @@ function! s:RunGrepRecursive(cmd_name, grep_cmd, action, ...)
         while txt != ''
             let one_file = strpart(txt, 0, stridx(txt, ' '))
             let find_skip_files = find_skip_files . ' ! -name ' .
-                                  \ g:Grep_Shell_Quote_Char . one_file .
-                                  \ g:Grep_Shell_Quote_Char
+                        \ g:Grep_Shell_Quote_Char . one_file .
+                        \ g:Grep_Shell_Quote_Char
             let txt = strpart(txt, stridx(txt, ' ') + 1)
         endwhile
     endif
@@ -633,7 +638,7 @@ function! s:RunGrepRecursive(cmd_name, grep_cmd, action, ...)
         let cmd = cmd . " -exec " . grep_path . " " . grep_opt . " -n "
         let cmd = cmd . grep_expr_option . " " . pattern
         let cmd = cmd . " {} " . g:Grep_Null_Device . ' ' .
-                         \ g:Grep_Shell_Escape_Char . ';'
+                    \ g:Grep_Shell_Escape_Char . ';'
     endif
 
     call s:RunGrepCmd(cmd, pattern, a:action)
@@ -750,7 +755,7 @@ endfunction
 function! s:RunGrep(cmd_name, grep_cmd, action, ...)
     if a:0 > 0 && (a:1 == "-?" || a:1 == "-h")
         echo 'Usage: ' . a:cmd_name . " [<grep_options>] [<search_pattern> " .
-                        \ "[<file_name(s)>]]"
+                    \ "[<file_name(s)>]]"
         return
     endif
 
@@ -768,7 +773,7 @@ function! s:RunGrep(cmd_name, grep_cmd, action, ...)
             let grep_opt = grep_opt . " " . a:{argcnt}
         elseif pattern == ""
             let pattern = g:Grep_Shell_Quote_Char . a:{argcnt} .
-                            \ g:Grep_Shell_Quote_Char
+                        \ g:Grep_Shell_Quote_Char
         else
             let filenames= filenames . " " . a:{argcnt}
         endif
@@ -808,7 +813,7 @@ function! s:RunGrep(cmd_name, grep_cmd, action, ...)
             return
         endif
         let pattern = g:Grep_Shell_Quote_Char . pattern .
-                        \ g:Grep_Shell_Quote_Char
+                    \ g:Grep_Shell_Quote_Char
         echo "\r"
     endif
 
@@ -861,29 +866,29 @@ command! -nargs=* -complete=file Ragrep
             \ call s:RunGrepRecursive('Ragrep', 'agrep', 'set', <f-args>)
 
 if v:version >= 700
-command! -nargs=* -complete=file GrepAdd
-            \ call s:RunGrep('GrepAdd', 'grep', 'add', <f-args>)
-command! -nargs=* -complete=file RgrepAdd
-            \ call s:RunGrepRecursive('RgrepAdd', 'grep', 'add', <f-args>)
-command! -nargs=* GrepBufferAdd
-            \ call s:RunGrepSpecial('GrepBufferAdd', 'buffer', 'add', <f-args>)
-command! -nargs=* BgrepAdd
-            \ call s:RunGrepSpecial('BgrepAdd', 'buffer', 'add', <f-args>)
-command! -nargs=* GrepArgsAdd
-            \ call s:RunGrepSpecial('GrepArgsAdd', 'args', 'add', <f-args>)
+    command! -nargs=* -complete=file GrepAdd
+                \ call s:RunGrep('GrepAdd', 'grep', 'add', <f-args>)
+    command! -nargs=* -complete=file RgrepAdd
+                \ call s:RunGrepRecursive('RgrepAdd', 'grep', 'add', <f-args>)
+    command! -nargs=* GrepBufferAdd
+                \ call s:RunGrepSpecial('GrepBufferAdd', 'buffer', 'add', <f-args>)
+    command! -nargs=* BgrepAdd
+                \ call s:RunGrepSpecial('BgrepAdd', 'buffer', 'add', <f-args>)
+    command! -nargs=* GrepArgsAdd
+                \ call s:RunGrepSpecial('GrepArgsAdd', 'args', 'add', <f-args>)
 
-command! -nargs=* -complete=file FgrepAdd
-            \ call s:RunGrep('FgrepAdd', 'fgrep', 'add', <f-args>)
-command! -nargs=* -complete=file RfgrepAdd
-            \ call s:RunGrepRecursive('RfgrepAdd', 'fgrep', 'add', <f-args>)
-command! -nargs=* -complete=file EgrepAdd
-            \ call s:RunGrep('EgrepAdd', 'egrep', 'add', <f-args>)
-command! -nargs=* -complete=file RegrepAdd
-            \ call s:RunGrepRecursive('RegrepAdd', 'egrep', 'add', <f-args>)
-command! -nargs=* -complete=file AgrepAdd
-            \ call s:RunGrep('AgrepAdd', 'agrep', 'add', <f-args>)
-command! -nargs=* -complete=file RagrepAdd
-            \ call s:RunGrepRecursive('RagrepAdd', 'agrep', 'add', <f-args>)
+    command! -nargs=* -complete=file FgrepAdd
+                \ call s:RunGrep('FgrepAdd', 'fgrep', 'add', <f-args>)
+    command! -nargs=* -complete=file RfgrepAdd
+                \ call s:RunGrepRecursive('RfgrepAdd', 'fgrep', 'add', <f-args>)
+    command! -nargs=* -complete=file EgrepAdd
+                \ call s:RunGrep('EgrepAdd', 'egrep', 'add', <f-args>)
+    command! -nargs=* -complete=file RegrepAdd
+                \ call s:RunGrepRecursive('RegrepAdd', 'egrep', 'add', <f-args>)
+    command! -nargs=* -complete=file AgrepAdd
+                \ call s:RunGrep('AgrepAdd', 'agrep', 'add', <f-args>)
+    command! -nargs=* -complete=file RagrepAdd
+                \ call s:RunGrepRecursive('RagrepAdd', 'agrep', 'add', <f-args>)
 endif
 
 " Add the Tools->Search Files menu
